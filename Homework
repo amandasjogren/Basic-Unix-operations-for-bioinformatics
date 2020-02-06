@@ -1,0 +1,146 @@
+# Assuming you are in the directory where the file
+# saccharomyces_cerevisiae_R64-2-1_20150113.gff is stored.
+# (It is stored in the directory named data)
+
+### Part 1 ###
+
+# How many genes are on chromosome II in
+# saccharomyces_cerevisiae_R64-2-1_20150113.gff ? Note that the chromosome
+# column is followed by a TAB charachter, which is encoded as \t
+
+# Inspect the file. less does not show the whole text which is suitable for
+# large files.
+
+less saccharomyces_cerevisiae_R64-2-1_20150113.gff
+
+# Save all lines that starts with "chrII" (not necessary, could search in the
+# file directly). grep print lines that match a specific pattern. > redirect the
+# output and saves in a .txt file.
+
+grep "chrII" saccharomyces_cerevisiae_R64-2-1_20150113.gff > chromosomeII_saccharomyces_cerevisiae.txt
+
+# Count number of "chrII    SGD     gene". Here, the flag -c counts how many
+# time the pattern appears.
+
+grep -c "chrII$(printf '\t')SGD$(printf '\t')gene" chromosomeII_saccharomyces_cerevisiae.txt
+
+# The output gives 456 genes
+
+
+### Part 2 ###
+# Count GC content in S288C_reference_sequence_R64-2-1_20150113.fsa.
+# You can do the final part (i.e. calculating a percentage) by hand or using
+# Unix tools like expr or bc. The important thing is to get the base counts.
+# Remove header, to make sure those letters are not included in the counts.
+
+# The sed command is a stream editor that can do different things such as
+# deletions. Here, /^>/ means find lines that starts with ">" and d means delete
+# the pattern.
+
+sed '/^>/ d' S288C_reference_sequence_R64-2-1_20150113.fsa > S288C_ref_without_header.txt
+
+# Count the bases, only capital letters are present in the file.
+# (zeros for all searches for lower-case letters)
+
+grep -c "G" S288C_ref_without_header.txt
+
+# The output: 202349
+
+grep -c "C" S288C_ref_without_header.txt
+
+# The output: 202335
+
+grep -c "A" S288C_ref_without_header.txt
+
+# The output: 202592
+
+grep -c "T" S288C_ref_without_header.txt
+
+# The output: 202604
+
+# Calculate GC content: 404684/809880 = 50%
+
+
+### Part 3 ###
+# Download and decompress the ORFs of another strain (Y55) from
+# https://downloads.yeastgenome.org/sequence/strains/Y55/Y55_SGD_2015_JRIF00000000/Y55_JRIF00000000_SGD_cds.fsa.gz
+
+wget https://downloads.yeastgenome.org/sequence/strains/Y55/Y55_SGD_2015_JRIF00000000/Y55_JRIF00000000_SGD_cds.fsa.gz
+
+# Decompress the files
+
+gunzip Y55_JRIF00000000_SGD_cds.fsa.gz
+
+### a) compare GC content in this file with the value in task 6.2. above
+# (make sure you’re not also counting letters in the headers)
+
+# grep all lines that does not start with ">" and count each base
+
+grep "^[^>]" Y55_JRIF00000000_SGD_cds.fsa | grep "G" -c
+
+# The output: 163784
+
+grep "^[^>]" Y55_JRIF00000000_SGD_cds.fsa | grep "C" -c
+
+# The output: 163282
+
+grep "^[^>]" Y55_JRIF00000000_SGD_cds.fsa | grep "A" -c
+
+# The output: 164191
+
+grep "^[^>]" Y55_JRIF00000000_SGD_cds.fsa | grep "T" -c
+
+# The output: 163959
+
+# Count GC content: 327066/655216 = 50%
+
+
+### b) compare number of ORFs in this strain (basically all the enties in the
+# Y55 file you downloaded since that only contains ORFs) with the number in the
+# reference genome (file orf_coding_all_R64-2-1_20150113.fasta)
+# ORF = open reading frame, part that can be translated.
+
+grep -c ">" Y55_JRIF00000000_SGD_cds.fsa
+
+# The output: 5330
+
+grep -c ">" orf_coding_all_R64-2-1_20150113.fasta
+
+# The output: 6713
+
+
+### c) count the common ORFs between this yeast strain and the reference we
+# worked previously in sections 1 and 2. Note: remove strain suffixes from names
+# in the non-reference strain.
+
+# Compare between Y55_JRIF00000000_SGD_cds (non-reference) and
+# orf_coding_all_R64-2-1_20150113.fasta (reference)
+
+# Make a new text file with all rows starting with >, i.e. rows containing
+# gene IDs
+
+grep ">" Y55_JRIF00000000_SGD_cds.fsa > Y55_ID_rows.txt
+
+# Make a new text file where the strain suffixes are removed.
+# Here, the s/_Y55.*// means s/regexp/replacement/, where regexp is the text
+# to match against the file and replacement is what to replace with. .* means
+# any extension of _Y55. The replacement here is nothing, i.e. remove everything
+# after _Y55 and hence, //. For, s/\s.*$//, it will remove everything after
+# first space
+
+sed 's/_Y55.*//' Y55_ID_rows.txt > Y55_ID_rows_only_ID.txt
+sed 's/\s.*$//' orf_coding_all_R64-2-1_20150113.fasta > orf_coding_ID.txt
+
+# Sort the gene IDs for both files to be able to use the command comm
+
+grep ">Y." Y55_ID_rows_only_ID.txt | sort > Y55_ID_rows_only_ID_sorted.txt
+grep ">Y." orf_coding_ID.txt | sort > orf_coding_ID_sorted.txt
+
+# Compare Y55_ID_rows_only_ID.txt with orf_coding_ID.txt by using comm.
+# comm compares two sorted files line by line. To only print the lines that
+# exist in both files, the flag -12 is used. Then, to count the lines, then wc
+# command is used.
+
+comm -12 Y55_ID_rows_only_ID_sorted.txt orf_coding_ID_sorted.txt | wc -l
+
+# The output: 5168
